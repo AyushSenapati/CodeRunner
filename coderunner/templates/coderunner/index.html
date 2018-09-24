@@ -1,0 +1,22 @@
+{% extends "coderunner/base.html" %}
+
+{% block content_quest_urls %}
+    <h3>Latest published questions:</h3>
+    {% if questions %}
+    <table>
+        <tr>
+            <th>Questions</th>
+            <th>Times viewed</th>
+        </tr>
+        {% for question in questions %}
+            <tr>
+                <td>
+                    <a href="{% url 'coderunner:details' question.id %}">{{ question.question_text }}
+                    </a>
+                </td>
+                <td>{{ question.times_appeared }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+    {% endif %}        
+{% endblock content_quest_urls %}

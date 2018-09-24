@@ -1,0 +1,70 @@
+{% load staticfiles %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ app_name }}</title>
+
+    <link rel="stylesheet" type="text/css" href="{% static "coderunner/css/style.css" %}">
+    <script type="text/javascript" src="{% static "coderunner/js/capturetab.js" %}"></script>
+    <script type="text/javascript" src="{% static 'coderunner/codemirror/js/jquery.min.js' %}">
+    </script>
+</head>
+
+<body>
+    {# Header #}
+    <div id="top">
+        <h1>{{ logo }}</h1>
+        <p>&lt; A powerful platform to code online <strong>/</strong>></p>
+    </div>
+
+    {# Body #}
+    <div id="content">
+        {% block content_quest_urls %}
+            
+        {% endblock content_quest_urls %}
+    </div>
+
+    {# Footer #}
+    <div id="footer">
+        <p>&copy; Copy right 2018, <strong>{{ logo }}/></strong></p>
+        <P>Powered by <strong>Django</strong></P>
+    </div>
+
+    {# Add event listener to capture tab #}
+    <script type="text/javascript">
+        document.querySelector("textarea").addEventListener("keydown", capturetab, false);
+    </script>
+
+    {# Capture each input in the text area and send it for validation #}
+    <script>
+        $("#form_id").on("input", function () {
+            console.log( $(this).val() );
+            var snippet = $(this).val();
+
+            $.ajax({
+                type: 'POST',
+                url: '{% url "coderunner:validate_program" %}',
+                data: {
+                    'snippet': snippet
+                },
+                dataType: 'json',
+                success: function(data) {
+                    if (data){
+                        var disp = '';
+                        for ( var key in data ) {
+                            disp += "Line Number: " +
+                                data[key].line_num + '   Error Message: ' +
+                                data[key].error_message + '<br>';
+                        }
+                        document.getElementById("result").innerHTML = disp;
+                    }
+                    else {
+                        document.getElementById("result").innerHTML = "Linting: success";
+                    }
+                }
+            })
+        });
+    </script>
+</body>
+</html>

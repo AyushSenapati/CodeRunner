@@ -1,0 +1,53 @@
+{% extends "coderunner/base.html" %}
+
+{% block content_quest_urls %}
+    <div id="content-main">
+        <h2>Question</h2>
+        <p><strong>{{ question.question_text }}</strong></p>
+        <P></P>
+        
+        <h3>Description</h3>
+        <p><i>{{ question.question_desc }}</i></p>
+        <p></p>
+        <div id='form'>
+            <form action="{% url 'coderunner:program' question.id %}" method="post">
+                {% csrf_token %}
+                <textarea name="program" id="form_id">
+{# Add a field to store pre-code as per the question #}
+#! /usr/bin/env python3
+
+def main():
+    # Your code goes here
+    # https://github.com/ethanchewy/PythonBuddy
+    pass
+
+
+if __name__ == '__main__':
+    main()
+</textarea>
+                <br>
+                <input type="submit" name="button" value="Run" id="run">
+                <input type="submit" name="button" value="Submit">
+
+                <div>
+                    <h3>Result</h3>
+                    <p id='result'></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="content-related">
+        <h2>Details</h2>
+        <div>
+            <h3>Users viewed:</h3>
+            <p><strong>{{ question.times_appeared }}</strong></p>
+
+            <h3>Pass percentage:</h3>
+            <p>{{ pass_percent }} %</p>
+        </div>
+    </div>
+
+    
+
+{% endblock content_quest_urls %}

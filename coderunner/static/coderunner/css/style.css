@@ -1,0 +1,90 @@
+#top {
+    height: 110px; width: 100%;
+    background: #E3E5E3;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 20px;
+}
+
+#content {
+    width: 100%;
+    padding-top: 110px;
+    /*position: static;*/
+}
+
+#footer {
+    height:55px;width:100%;
+    background: #E3E5E3;
+    /*position:relative;*/
+    position: fixed;
+    bottom:0px;
+    left:0;
+    right:0;
+    margin-left:auto;
+    margin-right:auto;
+    /*color:#FF9966;*/
+}
+
+#footer p {
+    text-align: center;
+    font: normal 10px verdana, sans-serif;
+}
+
+
+table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+}
+
+tr:nth-child(even) {
+    background-color: #dddddd;
+}
+
+#content-main {
+    float: left;
+    max-width: 70%;
+    margin-left: 2%;
+}
+
+#content-related h2 {
+    border-bottom: 2px solid #eaeaea;
+}
+
+#content-related {
+    right: 0;
+    float: right;
+    width: 200px;
+    position: fixed;
+    margin-right: 60px;
+}
+
+#form {
+    max-width: 70%;
+}
+
+#form textarea {
+    max-width: 100%;
+    min-width: 100%;
+    min-height: 250px;
+    max-height: 500px;
+}
+
+#textarea_output {
+    min-height: 50px;
+    min-width: 100%;
+}
+
+#result p {
+    font: normal 5px;
+}
