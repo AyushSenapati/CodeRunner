@@ -1,26 +1,51 @@
-#top {
-    height: 110px; width: 100%;
+#container {
+    position: relative;
+    width: 100%;
+    min-width: 980px;
+    padding: 0;
+}
+
+#header {
+    width: auto;
+    height: 60px;
+    padding: 10px 60px;
     background: #E3E5E3;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 20px;
+    line-height: 4px;
+    overflow: hidden;
+}
+
+#branding {
+    float: left;
+}
+
+#branding p {
+    font-size: 15px;
+}
+
+#user-tools {
+    float: right;
+    padding: 0;
+    margin: 0 0 0 20px;
+    display: inline;
+    width: auto;
+    font-weight: 300;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-align: right;
 }
 
 #content {
     width: 100%;
     padding-top: 110px;
-    /*position: static;*/
+    /*position: static;
 }
 
 #footer {
     height:55px;width:100%;
     background: #E3E5E3;
-    /*position:relative;*/
-    position: fixed;
+    position:relative;
+    /*position: fixed;*/
     bottom:0px;
     left:0;
     right:0;
@@ -85,6 +110,6 @@ tr:nth-child(even) {
     min-width: 100%;
 }
 
-#result p {
+#result textarea {
     font: normal 5px;
 }

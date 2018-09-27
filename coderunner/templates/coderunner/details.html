@@ -1,11 +1,11 @@
 {% extends "coderunner/base.html" %}
 
-{% block content_quest_urls %}
+{% block content %}
     <div id="content-main">
         <h2>Question</h2>
         <p><strong>{{ question.question_text }}</strong></p>
         <P></P>
-        
+
         <h3>Description</h3>
         <p><i>{{ question.question_desc }}</i></p>
         <p></p>
@@ -13,7 +13,6 @@
             <form action="{% url 'coderunner:program' question.id %}" method="post">
                 {% csrf_token %}
                 <textarea name="program" id="form_id">
-{# Add a field to store pre-code as per the question #}
 #! /usr/bin/env python3
 
 def main():
@@ -26,12 +25,14 @@ if __name__ == '__main__':
     main()
 </textarea>
                 <br>
-                <input type="submit" name="button" value="Run" id="run">
+                <button type="button" name="button" id="run">Run</button>
                 <input type="submit" name="button" value="Submit">
 
                 <div>
                     <h3>Result</h3>
-                    <p id='result'></p>
+                    <div>
+                        <textarea id='result' readonly></textarea>
+                    </div>
                 </div>
             </form>
         </div>
@@ -48,6 +49,65 @@ if __name__ == '__main__':
         </div>
     </div>
 
+    {# Add event listener to capture tab #}
+    <script type="text/javascript">
+        document.querySelector("textarea").addEventListener("keydown", capturetab, false);
+    </script>
+
+    {# Ajax call for running the code #}
+    <script type="text/javascript">
+        $("#run").click(function () {
+            var snippet = $("#form_id").val();
+
+            $.ajax({
+                type: 'POST',
+                url: "{% url 'coderunner:run_code' question.id %}",
+                data: {
+                    'snippet': snippet
+                },
+                dataType: 'json',
+                success: function(data) {
+                    if (data){
+                        var disp = '';
+                        for ( var index in data.output ) {
+                            disp += data.output[index] + '\n';
+                        }
+                        document.getElementById("result").innerHTML = disp;
+                    }
+                }
+            })
+        });
+    </script>>
+
+    {# Ajax call for linting #}
+    <script>
+        $("#form_id").on("input", function () {
+            var snippet = $(this).val();
+
+            $.ajax({
+                type: 'POST',
+                url: '{% url "coderunner:validate_program" %}',
+                data: {
+                    'snippet': snippet
+                },
+                dataType: 'json',
+                success: function(data) {
+                    if (data){
+                        var disp = '';
+                        for ( var key in data ) {
+                            disp += "Line Number: " +
+                                data[key].line_num + '   Error Message: ' +
+                                data[key].error_message + '\n';
+                        }
+                        document.getElementById("result").innerHTML = disp;
+                    }
+                    else {
+                        document.getElementById("result").innerHTML = "Linting: success";
+                    }
+                }
+            })
+        });
+    </script>
     
 
-{% endblock content_quest_urls %}
+{% endblock content %}

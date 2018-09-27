@@ -13,58 +13,44 @@
 
 <body>
     {# Header #}
-    <div id="top">
-        <h1>{{ logo }}</h1>
-        <p>&lt; A powerful platform to code online <strong>/</strong>></p>
-    </div>
+    <div id='container'>
+        <div id="header">
+            <div id='branding'>
+                <h1>{{ logo }}</h1>
+                <p>&lt; A powerful platform to code online <strong>/</strong>></p>
+            </div>
+            <div id='user-tools'>
+                {% if user.is_authenticated %}
+                    Welcome,
+                    <strong>{{ user.username }}</strong>
+                    . 
+                    <a href="#">Change password</a>
+                     / 
+                    <a href="{% url 'logout' %}">Logout</a>
+                {% else %}
+                    <a href="{% url 'login' %}">Login</a>
+                    or
+                    <a href="{% url 'coderunner:signup' %}">Signup</a>
+                {% endif %}
+            </div>
+        </div>
 
-    {# Body #}
-    <div id="content">
-        {% block content_quest_urls %}
-            
-        {% endblock content_quest_urls %}
-    </div>
+        {# Body #}
+        <div id="content">
+            {% block content %}
+                
+            {% endblock content %}
+        </div>
+
+<!-- Temporarily remove the Footer part
 
     {# Footer #}
     <div id="footer">
         <p>&copy; Copy right 2018, <strong>{{ logo }}/></strong></p>
         <P>Powered by <strong>Django</strong></P>
     </div>
+-->
+    </div>
 
-    {# Add event listener to capture tab #}
-    <script type="text/javascript">
-        document.querySelector("textarea").addEventListener("keydown", capturetab, false);
-    </script>
-
-    {# Capture each input in the text area and send it for validation #}
-    <script>
-        $("#form_id").on("input", function () {
-            console.log( $(this).val() );
-            var snippet = $(this).val();
-
-            $.ajax({
-                type: 'POST',
-                url: '{% url "coderunner:validate_program" %}',
-                data: {
-                    'snippet': snippet
-                },
-                dataType: 'json',
-                success: function(data) {
-                    if (data){
-                        var disp = '';
-                        for ( var key in data ) {
-                            disp += "Line Number: " +
-                                data[key].line_num + '   Error Message: ' +
-                                data[key].error_message + '<br>';
-                        }
-                        document.getElementById("result").innerHTML = disp;
-                    }
-                    else {
-                        document.getElementById("result").innerHTML = "Linting: success";
-                    }
-                }
-            })
-        });
-    </script>
 </body>
 </html>

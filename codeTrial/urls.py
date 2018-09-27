@@ -20,4 +20,5 @@ urlpatterns = [
     # path('coderunner/', include('coderunner.urls')),
     path('', include('coderunner.urls')),
     path('admin/', admin.site.urls),
+    path('accounts/', include('django.contrib.auth.urls')),
 ]

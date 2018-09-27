@@ -1,6 +1,6 @@
 {% extends "coderunner/base.html" %}
 
-{% block content_quest_urls %}
+{% block content %}
     <h3>Latest published questions:</h3>
     {% if questions %}
     <table>
@@ -19,4 +19,4 @@
         {% endfor %}
     </table>
     {% endif %}        
-{% endblock content_quest_urls %}
+{% endblock content %}

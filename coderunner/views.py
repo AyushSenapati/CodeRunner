@@ -1,19 +1,18 @@
 import os
 
-from django.shortcuts import render, get_object_or_404, HttpResponse
+from django.shortcuts import render, get_object_or_404, HttpResponse, redirect
 # from django.utils.six import BytesIO
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-
-# from rest_framework.parsers import JSONParser
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.decorators import login_required
 
 from .models import QuestionAnswer
 
 from subprocess import Popen, PIPE, STDOUT
 import tempfile
 from datetime import datetime
-
-
 from pylint import epylint as lint
 
 
@@ -21,8 +20,25 @@ APP_NAME = "CodeRunner"
 LOGO = ' '.join(list(APP_NAME))
 
 
+def signup(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            username = form.cleaned_data.get('username')
+            raw_paswd = form.cleaned_data.get('password1')
+            user = authenticate(username=username, password=raw_paswd)
+            login(request, user)
+            # return HttpResponseRedirect(reverse('home'))
+            return redirect('/home/')
+    else:
+        form = UserCreationForm()
+    return render(request,
+                  'registration/signup.html', {'form': form})
+
+
 # Create your views here.
-def index(request):
+def home(request):
     '''Return welcome message with listing
     all available questions to appear'''
 
@@ -39,10 +55,11 @@ def validate_program(request):
     print(f"##### Event occurance: {request.session['event_count']} times")
 
     # Slow down linting process
-    if (int(datetime.now().strftime('%s')) -
-            int(request.session['event_interval'])) < 3:
+    # (Reduced the interval to 2 for realtime linting)
+    if (datetime.timestamp(datetime.now()) -
+            request.session['last_event_time']) < 2:
 
-        request.session['event_interval'] = datetime.now().strftime('%s')
+        request.session['last_event_time'] = datetime.timestamp(datetime.now())
         return JsonResponse(None, safe=False)
 
     # If a file does not exist for current session
@@ -82,10 +99,11 @@ def validate_program(request):
     if data == {}:
         data = None
 
-    request.session['event_interval'] = datetime.now().strftime('%s')
+    request.session['last_event_time'] = datetime.timestamp(datetime.now())
     return JsonResponse(data, safe=False)
 
 
+@login_required
 def details(request, qid):
     '''Display the question and its description.
     Provide a form to write program with submit action.'''
@@ -94,7 +112,7 @@ def details(request, qid):
     request.session['event_count'] = 0
 
     # Set event occurance interval to restrict continous linting
-    request.session['event_interval'] = datetime.now().strftime('%s')
+    request.session['last_event_time'] = datetime.timestamp(datetime.now())
 
     question = get_object_or_404(QuestionAnswer, pk=qid)
     if question.times_appeared != 0:
@@ -121,21 +139,21 @@ def program(request, qid):
         # return HttpResponse(output)
 
     if PROGRAM_RUN_FLAG:
-        return HttpResponse('<h3>Code has been submitted successfully.</h3>'
-                            f'<br><p>Output of your code was: {output}</p>')
+        return JsonResponse(output, safe=False)
     else:
         return HttpResponse('Are you sure? You have not run the code yet.')
 
 
+@csrf_exempt
 def run_code(request, qid):
     '''Get the submitted code,
     run it and return the output to the user'''
-
     qid_obj = QuestionAnswer.objects.get(pk=qid)
     qid_obj.times_appeared += 1
 
     # Store the submitted program in session variable
-    request.session['program'] = request.POST['program']
+    # request.session['program'] = request.POST['program']
+    request.session['program'] = request.POST['snippet']
 
     # Create a temporary Python file to store submitted program
     with tempfile.NamedTemporaryFile(prefix='django_ayush_', dir='/tmp',
@@ -169,7 +187,8 @@ def run_code(request, qid):
     # Save all database updates
     qid_obj.save()
 
-    return output
+    data = {'output': output.split('\n')}
+    return JsonResponse(data, safe=False)
 
 
 def result(request, qid):
