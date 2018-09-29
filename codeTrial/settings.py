@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+import getpass
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -122,3 +123,20 @@ USE_TZ = True
 STATIC_URL = '/static/'
 LOGIN_REDIRECT_URL = '/home'
 LOGOUT_REDIRECT_URL = '/home'
+
+# Note sure if this keyword works,
+# have already added a validator inside form
+# ACCOUNT_UNIQUE_EMAIL = True
+
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# For development purposes only.
+# take the password from env variable at production deployment
+EMAIL_HOST_PASSWORD = getpass.getpass('Password for the mail server:', )
+if not EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_USE_TLS = True
+    EMAIL_PORT = 587
+    EMAIL_HOST_USER = 'noreply.coderunner@gmail.com'

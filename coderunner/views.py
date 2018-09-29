@@ -1,14 +1,19 @@
 import os
 
+from django.contrib.sites.shortcuts import get_current_site
 from django.shortcuts import render, get_object_or_404, HttpResponse, redirect
-# from django.utils.six import BytesIO
+from django.template.loader import render_to_string
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import login, authenticate
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 
 from .models import QuestionAnswer
+from .forms import SignUpForm
+from .tokens import account_activation_token
 
 from subprocess import Popen, PIPE, STDOUT
 import tempfile
@@ -21,26 +26,78 @@ LOGO = ' '.join(list(APP_NAME))
 
 
 def signup(request):
+    """Extend the basic UserCreationForm to accept email
+    by using the custom SignUpForm
+    and confirm the email address using an activation link
+    """
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = SignUpForm(request.POST)
         if form.is_valid():
-            form.save()
-            username = form.cleaned_data.get('username')
-            raw_paswd = form.cleaned_data.get('password1')
-            user = authenticate(username=username, password=raw_paswd)
-            login(request, user)
-            # return HttpResponseRedirect(reverse('home'))
-            return redirect('/home/')
+            user = form.save(commit=False)
+            user.is_active = False
+            user.save()
+            current_site = get_current_site(request)
+            email_subject = 'Activate your CodeRunner account'
+            email_message = render_to_string(
+                'registration/account_activation_email.html', {
+                    'user': user,
+                    'domain': current_site.domain,
+                    # Decode the base64 encoded data before sending,
+                    # else the byte code will be wrapped with str obj
+                    # which can't be decoded further
+                    'uid': urlsafe_base64_encode(
+                        force_bytes(user.pk)).decode(),
+                    'token': account_activation_token.make_token(user)
+                })
+            user.email_user(email_subject, email_message)
+            return redirect('/accounts/signup/account_activation_sent')
     else:
-        form = UserCreationForm()
+        form = SignUpForm()
     return render(request,
                   'registration/signup.html', {'form': form})
 
 
+def activate(request, uidb64, token):
+    try:
+        print(f"UID64: {uidb64}")
+        uid = urlsafe_base64_decode(uidb64.encode())
+        user = User.objects.get(pk=uid)
+    except User.DoesNotExist:
+        reasons = ['Account not found', ]
+        return render(request,
+                      'registration/account_activation_invalid.html',
+                      {'reasons': reasons})
+    except (TypeError, ValueError, OverflowError) as e:
+        raise e
+
+    if user is not None:
+        if account_activation_token.check_token(user, token):
+            user.is_active = True
+            # user.profile.email_confirmed = True
+            user.save()
+            login(request, user)
+            return redirect('/home')
+        else:
+            reasons = ['Token validation failed', ]
+            return render(request,
+                          'registration/account_activation_invalid.html',
+                          {'reasons': reasons})
+    else:
+        reasons = ['Account not found', ]
+        return render(request,
+                      'registration/account_activation_invalid.html',
+                      {'reasons': reasons})
+
+
+def account_activation_sent(request):
+    return render(request, 'registration/account_activation_sent.html')
+
+
 # Create your views here.
 def home(request):
-    '''Return welcome message with listing
-    all available questions to appear'''
+    """Return welcome message with listing
+    all available questions to appear
+    """
 
     questions = QuestionAnswer.objects.order_by('-id')[:5]
     return render(request, 'coderunner/index.html',
@@ -105,8 +162,9 @@ def validate_program(request):
 
 @login_required
 def details(request, qid):
-    '''Display the question and its description.
-    Provide a form to write program with submit action.'''
+    """Display the question and its description.
+    Provide a form to write program with submit action.
+    """
 
     # Set event counter for validate program to zero
     request.session['event_count'] = 0
@@ -146,8 +204,10 @@ def program(request, qid):
 
 @csrf_exempt
 def run_code(request, qid):
-    '''Get the submitted code,
-    run it and return the output to the user'''
+    """Get the submitted code,
+    run it and return the output to the user
+    """
+
     qid_obj = QuestionAnswer.objects.get(pk=qid)
     qid_obj.times_appeared += 1
 
@@ -192,6 +252,6 @@ def run_code(request, qid):
 
 
 def result(request, qid):
-    '''Show results'''
+    """Show results"""
 
     return render(request, 'coderunner/result.html', {'result': result})

@@ -1,0 +1,8 @@
+<h2>Account activation unsuccessful!</h2>
+
+{% if reasons %}
+{% for reason in reasons %}
+    <h3>Reason: {{ reason }}</h3>
+{% endfor %}
+    
+{% endif %}
