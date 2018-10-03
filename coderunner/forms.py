@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 
 
@@ -20,9 +20,47 @@ class SignUpForm(UserCreationForm):
         max_length=234,
         required=True,
         help_text="Required. Enter a valid email address",
-        validators=[validate_email_unique, ]
+        validators=[validate_email_unique, ],
+        # widget=forms.TextInput(attrs={
+        #                        'class': 'form-control'
+        #                        })
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['username'].widget.attrs.update(
+            {'class': 'form-control', 'placeholder': 'Username'})
+
+        self.fields['email'].widget.attrs.update(
+            {'class': 'form-control', 'placeholder': 'Email'})
+
+        self.fields['password1'].widget.attrs.update(
+            {'class': 'form-control', 'placeholder': 'Password'})
+
+        self.fields['password2'].widget.attrs.update(
+            {'class': 'form-control', 'placeholder': 'Re-enter Password'})
 
     class Meta:
         model = User
         fields = ('username', 'email', 'password1', 'password2', )
+        # widgets = {
+        #     'email': forms.TextInput(attrs={
+        #                              'class': 'class_signup_form',
+        #                              'id': 'id_signup_form'
+        #                              })
+        # }
+
+
+class LoginForm(AuthenticationForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['username'].widget.attrs.update(
+            {'class': 'form-control', 'placeholder': 'Username'})
+        self.fields['password'].widget.attrs.update(
+            {'class': 'form-control', 'placeholder': 'Password'})
+
+    class Meta:
+        model = User
+        fields = ('username', 'password')

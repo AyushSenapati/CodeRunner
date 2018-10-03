@@ -1,9 +1,16 @@
 from django.urls import path
 from . import views
-
+from django.contrib.auth import views as auth_views
+from .forms import LoginForm
+from .views import LOGO
 
 app_name = 'coderunner'
 urlpatterns = [
+    path('accounts/login/',
+         auth_views.LoginView.as_view(authentication_form=LoginForm,
+                                      redirect_authenticated_user=True,
+                                      extra_context={'logo': LOGO}),
+         name='login'),
     path('accounts/signup/account_activation_sent/',
          views.account_activation_sent, name='account_activation_sent'),
     path('activate/<uidb64>/<token>/',

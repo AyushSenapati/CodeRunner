@@ -1,8 +1,42 @@
-<h2>Login</h2>
+{% load staticfiles %}
 
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Login</button>
-</form>
-<a href="{% url 'coderunner:signup' %}">Not have an account yet?</a>
+<head>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" type="text/css" href="{% static "coderunner/css/style.css" %}">
+</head>
+
+<body>
+
+    <div style="background: #4CAF50; height:100%; padding-top: 0; position:">
+    <p style="padding-left: 25px; padding-top: 15px; font-size: 30px">{{logo}}</p>
+
+    <!-- SIGNIN SHADOW BOX -->
+    <div style="box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19); width: 35%; min-height: 230px; overflow: hidden; background: white; margin: 50 auto;">
+        <center>
+            <br>
+            <div style="width:90%">
+                <form action="" method="post">
+                    {%csrf_token%}
+
+                    {% if form.errors %}
+                        <div class="form-group has-errors text-danger small">
+                              Please check your username or password
+                        </div>
+                    {% endif %}
+
+                    {% for field in form %}
+                        <div class="form-group">
+                          {{field}}
+                        </div>
+                    {% endfor %}
+                    <button class="btn btn-lg btn-primary" style="width:100%">GET ME IN</button>
+                </form>
+                <p>Not have an account? <a href="{% url 'coderunner:signup' %}">REGISTER</a></p>
+            </div>
+        </center>
+    </div>
+    <!-- END OF SIGNUP BOX-->
+
+    </div>
+
+</body>

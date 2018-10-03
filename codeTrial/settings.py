@@ -122,7 +122,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 LOGIN_REDIRECT_URL = '/home'
-LOGOUT_REDIRECT_URL = '/home'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 # Note sure if this keyword works,
 # have already added a validator inside form

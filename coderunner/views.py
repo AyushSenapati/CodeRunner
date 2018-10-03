@@ -7,7 +7,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
@@ -21,7 +21,7 @@ from datetime import datetime
 from pylint import epylint as lint
 
 
-APP_NAME = "CodeRunner"
+APP_NAME = "CODERUNNER"
 LOGO = ' '.join(list(APP_NAME))
 
 
@@ -30,6 +30,9 @@ def signup(request):
     by using the custom SignUpForm
     and confirm the email address using an activation link
     """
+    if request.user.is_authenticated:
+        return redirect('/home')
+
     if request.method == 'POST':
         form = SignUpForm(request.POST)
         if form.is_valid():
@@ -54,7 +57,7 @@ def signup(request):
     else:
         form = SignUpForm()
     return render(request,
-                  'registration/signup.html', {'form': form})
+                  'registration/signup.html', {'form': form, 'logo': LOGO})
 
 
 def activate(request, uidb64, token):
@@ -75,7 +78,7 @@ def activate(request, uidb64, token):
             user.is_active = True
             # user.profile.email_confirmed = True
             user.save()
-            login(request, user)
+            auth_login(request, user)
             return redirect('/home')
         else:
             reasons = ['Token validation failed', ]
@@ -94,6 +97,7 @@ def account_activation_sent(request):
 
 
 # Create your views here.
+@login_required
 def home(request):
     """Return welcome message with listing
     all available questions to appear
@@ -166,6 +170,8 @@ def details(request, qid):
     Provide a form to write program with submit action.
     """
 
+    for key, value in request.session.items():
+        print(f"{key} => {value}")
     # Set event counter for validate program to zero
     request.session['event_count'] = 0
 
