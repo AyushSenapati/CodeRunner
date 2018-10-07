@@ -1,22 +1,61 @@
 {% extends "coderunner/base.html" %}
 
+
 {% block content %}
-    <h3>Latest published questions:</h3>
-    {% if questions %}
-    <table>
-        <tr>
-            <th>Questions</th>
-            <th>Times viewed</th>
-        </tr>
-        {% for question in questions %}
-            <tr>
-                <td>
-                    <a href="{% url 'coderunner:details' question.id %}">{{ question.question_text }}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-9" style="padding-top: 35px;">
+            <p class="heading">Latest published questions</p>
+            {% if questions %}
+            {% for question in questions %}
+                <div class="shadow no-textarea popout">
+                    <div class="col-lg-10">
+                         <p>{{ question.question_text }}</p>
+                         Attempted {{ question.times_appeared }} times.
+                    </div>
+
+                    <div class="col-lg-2">
+                    <a href="{% url 'coderunner:details' question.id %}" style="color: #002659;">
+                        <button class="btn">S o l v e</button>
                     </a>
-                </td>
-                <td>{{ question.times_appeared }}</td>
-            </tr>
-        {% endfor %}
-    </table>
-    {% endif %}        
+                    </div>
+                </div> 
+            {% endfor %}
+            {% endif %}
+
+        </div>
+
+        <div class="col-lg-3">
+            <div id="content-related">
+                <div class='shadow_detail'>
+                    <p class="heading">User details</p>
+                    {# <br> #}
+                    <div>
+                        Account created:
+                        <div style="position: relative;float: right;">
+                            {{ user.date_joined.date }}
+                        </div>
+                    </div>
+                    {# <br> #}
+                    <div>
+                        Submissions:
+                        <div style="position: relative;float: right;">
+                            {{ user.total_submit }}
+                        </div>
+                    </div>
+                    <div>
+                        Score:
+                        <div style="position: relative;float: right;">
+                            {{ user.score}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+
 {% endblock content %}

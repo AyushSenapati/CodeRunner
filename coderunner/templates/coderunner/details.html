@@ -1,113 +1,186 @@
 {% extends "coderunner/base.html" %}
+{% load staticfiles %}
+
+{% block header %}
+    <script type="text/javascript" src="{% static 'coderunner/codemirror/js/jquery.min.js' %}">
+    </script>
+    <script src="{% static 'coderunner/codemirror/plugins/lib/codemirror.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'coderunner/codemirror/plugins/lib/codemirror.css' %}">
+    <link rel="stylesheet" href="{% static 'coderunner/codemirror/plugins/theme/neo.css' %}">
+    <link rel="stylesheet" href="{% static 'coderunner/codemirror/plugins/addon/display/fullScreen.css' %}">
+    <script src="{% static 'coderunner/codemirror/plugins/addon/display/fullScreen.js' %}"></script>
+    <script src="{% static 'coderunner/codemirror/plugins/mode/python/python.js' %}"></script>
+
+    <style type="text/css">
+        .CodeMirror {
+            border: 1px solid #eee;
+            min-height: 400px;
+            font-size: 16px;
+        }
+
+    </style>
+{% endblock header %}
+
 
 {% block content %}
-    <div id="content-main">
-        <h2>Question</h2>
-        <p><strong>{{ question.question_text }}</strong></p>
-        <P></P>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-9" style="padding-top: 35px;">
 
-        <h3>Description</h3>
-        <p><i>{{ question.question_desc }}</i></p>
-        <p></p>
-        <div id='form'>
-            <form action="{% url 'coderunner:program' question.id %}" method="post">
-                {% csrf_token %}
-                <textarea name="program" id="form_id">
+            <p class="heading">Question</p>
+             <div class='shadow no-textarea'>
+                <p>{{ question.question_text }}</p>
+                <p class="heading">Description</p>
+                <p><i>{{ question.question_desc }}</i></p>
+            </div>
+
+            <div style="height: 40px;"></div>
+
+            <div id='form' >
+                <form action="{% url 'coderunner:program' question.id %}" method="post">
+                    {% csrf_token %}
+                    <div class='shadow'>
+<textarea name="program" id="id_code_editor" style="border: none;">
 #! /usr/bin/env python3
 
 def main():
     # Your code goes here
-    # https://github.com/ethanchewy/PythonBuddy
     pass
-
 
 if __name__ == '__main__':
     main()
 </textarea>
-                <br>
-                <button type="button" name="button" id="run">Run</button>
-                <input type="submit" name="button" value="Submit">
+- Press Esc to toggle full screen
+                    </div>
+                    <br>
+                    <div style="float: right;">
+                        <button type="button" name="button" class="btn btn-secodary" id="run">Run <i id='run_animate'></i></button> &nbsp;&nbsp;
+                        <input type="submit" name="button" class="btn btn-primary" value="Submit">
+                    </div>
+                </form>
+            </div>
+            
+            <br><br>
+            <div>
+                <p class="heading">Result</h3>
+                <div class="shadow">
+<textarea id='id_result_area' style="border: none" readonly>
+</textarea>
+                </div>
+            </div>
+        
+        </div>
+ 
 
-                <div>
-                    <h3>Result</h3>
+        <div class="col-lg-3">
+            <div id="content-related">
+                <div class='shadow_detail'>
+                    <p class="heading">Question details</p>
+                    {# <br> #}
                     <div>
-                        <textarea id='result' readonly></textarea>
+                        Users viewed: 
+                        <div style="position: relative;float: right;">
+                            {{ question.times_appeared }}
+                        </div>
+                    </div>
+                    {# <br> #}
+                    <div>
+                        Pass percentage:
+                         <div style="position: relative;float: right;">{{ pass_percent }} %</div>
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
+
+
     </div>
+</div>
 
-    <div id="content-related">
-        <h2>Details</h2>
-        <div>
-            <h3>Users viewed:</h3>
-            <p><strong>{{ question.times_appeared }}</strong></p>
+{# CodeMirror - code editor instance #}
+<script type="text/javascript">
+    var editor = CodeMirror.fromTextArea(document.getElementById('id_code_editor'), {
+        lineNumbers: true,
+        mode: "python",
+        indentUnit: 4,
+        lineWrapping: true,
+        // readOnly: "nocursor",
+        theme: "neo",
+        extraKeys: {
+            "Esc": function(cm) {
+            if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
+            else cm.setOption("fullScreen", true);
+        }},
 
-            <h3>Pass percentage:</h3>
-            <p>{{ pass_percent }} %</p>
-        </div>
-    </div>
+    });
+</script>
 
-    {# Add event listener to capture tab #}
-    <script type="text/javascript">
-        document.querySelector("textarea").addEventListener("keydown", capturetab, false);
-    </script>
+{# CodeMirror - result textarea instance #}
+<script type="text/javascript">
+    var result_area = CodeMirror.fromTextArea(document.getElementById('id_result_area'), {
+        lineWrapping: true,
+        readOnly: "nocursor",
+        theme: "neo",
+    });
+</script>
 
-    {# Ajax call for running the code #}
-    <script type="text/javascript">
-        $("#run").click(function () {
-            var snippet = $("#form_id").val();
+{# Ajax call for running the code #}
+<script type="text/javascript">
+    $("#run").click(function () {
+        e1 = $('#run_animate');
+        e1.addClass('fa fa-spiner fa-spin');
+        var snippet = editor.getValue();
 
-            $.ajax({
-                type: 'POST',
-                url: "{% url 'coderunner:run_code' question.id %}",
-                data: {
-                    'snippet': snippet
-                },
-                dataType: 'json',
-                success: function(data) {
-                    if (data){
-                        var disp = '';
-                        for ( var index in data.output ) {
-                            disp += data.output[index] + '\n';
-                        }
-                        document.getElementById("result").innerHTML = disp;
+        $.ajax({
+            type: 'POST',
+            url: "{% url 'coderunner:run_code' question.id %}",
+            data: {
+                'snippet': snippet
+            },
+            dataType: 'json',
+            success: function(data) {
+                if (data){
+                    var disp = '';
+                    for ( var index in data.output ) {
+                        disp += data.output[index] + '\n';
                     }
+                    // document.getElementById("result").innerHTML = disp;
+                    result_area.getDoc().setValue(disp);
                 }
-            })
+            }
         });
-    </script>>
+    });
+</script>
 
-    {# Ajax call for linting #}
-    <script>
-        $("#form_id").on("input", function () {
-            var snippet = $(this).val();
+{# Ajax call for linting #}
+<script>
+    editor.on("change", function () {
+        var snippet = editor.getValue()
 
-            $.ajax({
-                type: 'POST',
-                url: '{% url "coderunner:validate_program" %}',
-                data: {
-                    'snippet': snippet
-                },
-                dataType: 'json',
-                success: function(data) {
-                    if (data){
-                        var disp = '';
-                        for ( var key in data ) {
-                            disp += "Line Number: " +
-                                data[key].line_num + '   Error Message: ' +
-                                data[key].error_message + '\n';
-                        }
-                        document.getElementById("result").innerHTML = disp;
+        $.ajax({
+            type: 'POST',
+            url: '{% url "coderunner:validate_program" %}',
+            data: {
+                'snippet': snippet
+            },
+            dataType: 'json',
+            success: function(data) {
+                if (data){
+                    var disp = '';
+                    for ( var key in data ) {
+                        disp += "Line Number: " +
+                            data[key].line_num + '   Error Message: ' +
+                            data[key].error_message + '\n';
                     }
-                    else {
-                        document.getElementById("result").innerHTML = "Linting: success";
-                    }
+                    // document.getElementById("result").innerHTML = disp;
+                    result_area.getDoc().setValue(disp);
                 }
-            })
+                else {
+                    // document.getElementById("result").innerHTML = "Linting: success";
+                    result_area.getDoc().setValue("Linting: success");
+                }
+            }
         });
-    </script>
-    
+    });
+</script>
 
 {% endblock content %}

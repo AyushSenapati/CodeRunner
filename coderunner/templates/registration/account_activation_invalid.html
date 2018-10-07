@@ -1,8 +1,17 @@
-<h2>Account activation unsuccessful!</h2>
+{% extends "registration/auth_base.html" %}
 
-{% if reasons %}
-{% for reason in reasons %}
-    <h3>Reason: {{ reason }}</h3>
-{% endfor %}
-    
-{% endif %}
+{% block auth_content %}
+<div class="col-lg-20">
+    <div class='notify_user'>
+        <p>Account activation unsuccessful!</p>
+
+        {% if reasons %}
+            Reasons:
+            {% for reason in reasons %}
+                <br>
+                {{ reason }}
+            {% endfor %}    
+        {% endif %}
+    </div>
+</div>
+{% endblock auth_content %}

@@ -1,1 +1,9 @@
-<h2>Account activation link has been sent to the mentioned email address.</h2>
+{% extends "registration/auth_base.html" %}
+
+{% block auth_content %}
+<div class="col-lg-20">
+    <div class='notify_user'>
+        <p>Account activation link has been sent to the mentioned email address.</p>
+    </div>
+</div>
+{% endblock auth_content %}

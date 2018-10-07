@@ -32,14 +32,15 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    'rest_framework',
-    'coderunner.apps.CoderunnerConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'rest_framework',
+    'coderunner.apps.CoderunnerConfig',
 ]
 
 MIDDLEWARE = [
@@ -124,6 +125,7 @@ STATIC_URL = '/static/'
 LOGIN_REDIRECT_URL = '/home'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
+CODEMIRROR_PATH = STATIC_URL + 'coderunner/codemirror/'
 # Note sure if this keyword works,
 # have already added a validator inside form
 # ACCOUNT_UNIQUE_EMAIL = True

@@ -1,5 +1,8 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import (UserCreationForm,
+                                       AuthenticationForm,
+                                       SetPasswordForm,
+                                       PasswordChangeForm)
 from django.contrib.auth.models import User
 
 
@@ -64,3 +67,33 @@ class LoginForm(AuthenticationForm):
     class Meta:
         model = User
         fields = ('username', 'password')
+
+
+class CustomPasswordResetForm(SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['new_password1'].widget.attrs.update(
+            {'class': 'form-control', 'placeholder': 'New password'})
+        self.fields['new_password2'].widget.attrs.update(
+            {'class': 'form-control', 'placeholder': 'Confirm password'})
+
+    class Meta:
+        model = User
+        fields = ('password1', 'password2')
+
+
+class CustomPasswordChangeForm(PasswordChangeForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['old_password'].widget.attrs.update(
+            {'class': 'form-control', 'placeholder': 'Old password'})
+        self.fields['new_password1'].widget.attrs.update(
+            {'class': 'form-control', 'placeholder': 'New password'})
+        self.fields['new_password2'].widget.attrs.update(
+            {'class': 'form-control', 'placeholder': 'Confirm new password'})
+
+    class Meta:
+        model = User
+        fields = ('password', 'password1', 'password2')

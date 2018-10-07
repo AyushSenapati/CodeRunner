@@ -1,0 +1,81 @@
+{% load staticfiles %}
+
+<head>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="{% static "coderunner/css/style.css" %}">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <title>
+        {% if title %}
+            {{ title }}
+        {% elif app.title %}
+            {{ app.title }}
+        {% else %}
+            {{ app.logo }}
+        {% endif %}
+    </title>
+</head>
+
+<style type="text/css">
+    body
+    {
+        /*background-color: crimson;*/
+        /*background-color: cadetblue;*/
+        /*background-color: #4caf50;*/
+        background-color: #337ab7;
+    }
+
+    .form1
+    {
+        padding: 20px;
+        box-shadow: 0px 4px 15px 0px #4f4f4f;
+        /*box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);*/
+        position: relative;
+        top: 30%;
+        background-color: white;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .notify_user
+    {
+        padding: 20px;
+        box-shadow: 0px 4px 15px 0px #4f4f4f;
+        position: relative;
+        background-color: white;
+        font-size: 20px;
+        min-width: 100%;
+        margin: 0 auto;
+    }
+
+</style>
+
+<body>
+    <div style="height: 100%, position: relative;">
+    <div style="padding-top: 15px; padding-left:35px, padding-bottom: 10px;">
+        <p style="font-size: 30px;padding-top: 15px;padding-bottom: 10px;padding-left: 35px;">{{app.logo}}</p>
+    </div>
+
+    <br><br>
+    <div class="container" style="height: 65%;">
+        <div class="row">
+            <div class="col-lg-2" id="auth_content">
+            </div>
+            <div class="col-lg-8">
+                {% block auth_content %}
+                    
+                {% endblock auth_content %}
+            </div>
+            <div class="col-lg-2">
+          
+            </div>
+        </div>
+    </div>
+    <br><br>
+    <div align="center" style="padding-top:40px; padding-bottom: 20px;">
+        <a href="https://www.github.com/AyushSenapati/CodeRunner">
+            <i class="fa fa-github" style="font-size: 34px; color: black;"></i>
+        </a>
+    </div>
+    </div>
+</body>

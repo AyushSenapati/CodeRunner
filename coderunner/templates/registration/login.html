@@ -1,20 +1,12 @@
-{% load staticfiles %}
+{% extends "registration/auth_base.html" %}
 
-<head>
-  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-  <link rel="stylesheet" type="text/css" href="{% static "coderunner/css/style.css" %}">
-</head>
-
-<body>
-
-    <div style="background: #4CAF50; height:100%; padding-top: 0; position:">
-    <p style="padding-left: 25px; padding-top: 15px; font-size: 30px">{{logo}}</p>
-
-    <!-- SIGNIN SHADOW BOX -->
-    <div style="box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19); width: 35%; min-height: 230px; overflow: hidden; background: white; margin: 50 auto;">
+{% block auth_content %}    
+    <div class="form1">
         <center>
+            <h3>Sign in</h3>
+            <p>Continue to CODERUNNER</p>
             <br>
-            <div style="width:90%">
+            <div>
                 <form action="" method="post">
                     {%csrf_token%}
 
@@ -29,14 +21,11 @@
                           {{field}}
                         </div>
                     {% endfor %}
-                    <button class="btn btn-lg btn-primary" style="width:100%">GET ME IN</button>
+                    <button class="btn btn-lg btn-primary" style="width:100%">Next</button>
                 </form>
-                <p>Not have an account? <a href="{% url 'coderunner:signup' %}">REGISTER</a></p>
+                <p>Forgot username/password? <a href="{% url 'password_reset' %}">Reset</a></p>
+                <p>Not have an account yet? <a href="{% url 'coderunner:signup' %}">REGISTER</a></p>
             </div>
         </center>
     </div>
-    <!-- END OF SIGNUP BOX-->
-
-    </div>
-
-</body>
+{% endblock auth_content %}
