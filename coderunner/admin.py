@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import QuestionAnswer
+from .models import Questions, Submissions, UserProfile
 
 # Register your models here.
-admin.site.register(QuestionAnswer)
+admin.site.register(Questions)
+admin.site.register(Submissions)
+admin.site.register(UserProfile)

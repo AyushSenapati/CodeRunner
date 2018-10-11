@@ -32,6 +32,8 @@
                 <p>{{ question.question_text }}</p>
                 <p class="heading">Description</p>
                 <p><i>{{ question.question_desc }}</i></p>
+                <p class="heading">Output format</p>
+                <p>{{ question.output_format }}</p>
             </div>
 
             <div style="height: 40px;"></div>
@@ -41,20 +43,16 @@
                     {% csrf_token %}
                     <div class='shadow'>
 <textarea name="program" id="id_code_editor" style="border: none;">
-#! /usr/bin/env python3
-
-def main():
-    # Your code goes here
-    pass
-
-if __name__ == '__main__':
-    main()
+{{ question.pre_code_snippet}}
 </textarea>
 - Press Esc to toggle full screen
                     </div>
                     <br>
                     <div style="float: right;">
-                        <button type="button" name="button" class="btn btn-secodary" id="run">Run <i id='run_animate'></i></button> &nbsp;&nbsp;
+                        <button type="button" name="button" class="btn btn-secodary" id="run">
+                            Run
+                        </button>
+                        &nbsp;&nbsp;
                         <input type="submit" name="button" class="btn btn-primary" value="Submit">
                     </div>
                 </form>
@@ -64,34 +62,47 @@ if __name__ == '__main__':
             <div>
                 <p class="heading">Result</h3>
                 <div class="shadow">
-<textarea id='id_result_area' style="border: none" readonly>
+<textarea id='id_result_area' style="border: none">
 </textarea>
                 </div>
             </div>
         
         </div>
  
-
+        <!-- Question details section-->
         <div class="col-lg-3">
             <div id="content-related">
                 <div class='shadow_detail'>
                     <p class="heading">Question details</p>
-                    {# <br> #}
                     <div>
-                        Users viewed: 
+                        Author: 
                         <div style="position: relative;float: right;">
-                            {{ question.times_appeared }}
+                            {{ question.author }}
                         </div>
                     </div>
                     {# <br> #}
                     <div>
+                        Submitted: 
+                        <div style="position: relative;float: right;">
+                            {{ question.times_submitted }} time(s)
+                        </div>
+                    </div>
+                    <div>
                         Pass percentage:
-                         <div style="position: relative;float: right;">{{ pass_percent }} %</div>
+                        <div style="position: relative;float: right;">
+                            {{ pass_percent }} %
+                        </div>
+                    </div>
+                    <div>
+                        Award:
+                        <div style="position: relative;float: right;">
+                            {{ question.score }} points
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
+        <!-- End of question details section-->
 
     </div>
 </div>
@@ -126,8 +137,6 @@ if __name__ == '__main__':
 {# Ajax call for running the code #}
 <script type="text/javascript">
     $("#run").click(function () {
-        e1 = $('#run_animate');
-        e1.addClass('fa fa-spiner fa-spin');
         var snippet = editor.getValue();
 
         $.ajax({
@@ -143,7 +152,6 @@ if __name__ == '__main__':
                     for ( var index in data.output ) {
                         disp += data.output[index] + '\n';
                     }
-                    // document.getElementById("result").innerHTML = disp;
                     result_area.getDoc().setValue(disp);
                 }
             }
@@ -171,11 +179,9 @@ if __name__ == '__main__':
                             data[key].line_num + '   Error Message: ' +
                             data[key].error_message + '\n';
                     }
-                    // document.getElementById("result").innerHTML = disp;
                     result_area.getDoc().setValue(disp);
                 }
                 else {
-                    // document.getElementById("result").innerHTML = "Linting: success";
                     result_area.getDoc().setValue("Linting: success");
                 }
             }

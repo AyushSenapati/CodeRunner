@@ -1,0 +1,28 @@
+{% extends "coderunner/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-2"></div>
+        <div class="col-lg-8" style="padding-top: 35px;">
+            <p class="heading">Update the Question</p>
+            <form action="" method="post">
+                <div class="shadow" style="padding: 35px;">
+                    {% csrf_token %}
+
+                    {{ form.as_p }}
+                </div>
+                <br>
+                <div style="float: right;">
+                    <button class="btn btn-primary">UPDATE</button>
+                </div>
+            </form>
+            <a href="{% url 'coderunner:delete_question' object.id %}">
+                <button class="btn" style="background: darkred; color: white;">DELETE</button>
+            </a>
+        </div>
+        <div class="col-lg-2"></div>
+    </div>
+</div>
+
+{% endblock content %}

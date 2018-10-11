@@ -10,20 +10,33 @@
             {% if questions %}
             {% for question in questions %}
                 <div class="shadow no-textarea popout">
-                    <div class="col-lg-10">
-                         <p>{{ question.question_text }}</p>
-                         Attempted {{ question.times_appeared }} times.
+                    <div class="col-lg-10" style="font-size:10px">
+                        <p style="font-size:16px">{{ question.question_text }}</p>
+                            Author: {{ question.author.username }}
+                            /
+                            Posted on: {{ question.published_on }}
+                            / 
+                        {% if question.times_submitted > 0 %}
+                            Submitted by {{ question.times_submitted }} user(s)
+                        {% else %}
+                            Be the first to submit a solution
+                        {% endif %}
                     </div>
 
                     <div class="col-lg-2">
-                    <a href="{% url 'coderunner:details' question.id %}" style="color: #002659;">
-                        <button class="btn">S o l v e</button>
-                    </a>
+                        {% if user.username == question.author.username %}
+                            <a href="{% url 'coderunner:modify_question' question.id %}" style="color: #002659;">
+                                <button class="btn">M o d i f y</button>
+                            </a>
+                        {% else %}
+                            <a href="{% url 'coderunner:details' question.id %}" style="color: #002659;">
+                                <button class="btn">S o l v e</button>
+                            </a>
+                        {% endif %}
                     </div>
                 </div> 
             {% endfor %}
             {% endif %}
-
         </div>
 
         <div class="col-lg-3">
@@ -32,22 +45,29 @@
                     <p class="heading">User details</p>
                     {# <br> #}
                     <div>
-                        Account created:
+                        Date joined:
                         <div style="position: relative;float: right;">
                             {{ user.date_joined.date }}
                         </div>
                     </div>
                     {# <br> #}
                     <div>
+                        Last login:
+                        <div style="position: relative;float: right;">
+                            {{ user.last_login.date }}
+                        </div>
+                    </div>
+                    {# <br> #}
+                    <div>
                         Submissions:
                         <div style="position: relative;float: right;">
-                            {{ user.total_submit }}
+                            {{ submissions|length }}
                         </div>
                     </div>
                     <div>
                         Score:
                         <div style="position: relative;float: right;">
-                            {{ user.score}}
+                            {{ user.userprofile.score }}
                         </div>
                     </div>
                 </div>

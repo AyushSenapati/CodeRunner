@@ -8,14 +8,16 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import login as auth_login
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Permission
+from django.contrib.auth.decorators import user_passes_test
+# from django.contrib import messages
+from django.views.generic.edit import UpdateView, DeleteView
 
-from .models import QuestionAnswer
-from .forms import SignUpForm
+from .models import Questions, Submissions
+from .forms import SignUpForm, PublishQuestionForm
 from .tokens import account_activation_token
 
 import subprocess as sp
-# import tempfile
 from datetime import datetime
 from pylint import epylint as lint
 
@@ -25,6 +27,9 @@ LOGO = ' '.join(list(APP_NAME))
 APP = {'name': APP_NAME, 'logo': LOGO, 'title': None}
 FILE_DIR = "/tmp/coderunner_"
 FILE_EXT = ".py"
+REQ_SCORE_TO_PUBLISH = 20
+
+CAN_PUBLISH_QUESTION = Permission.objects.get(name='Can add Questions')
 
 
 # Create your views here.
@@ -138,11 +143,101 @@ def home(request):
 
     APP['title'] = 'H O M E'
     user = request.user
-    questions = QuestionAnswer.objects.order_by('-id')[:5]
+    # user.has_perm()
+    submissions = Submissions.objects.filter(
+        username__username=user)
+    questions = Questions.objects.order_by('-id')[:5]
+    # messages.warning(request, 'User has no Publish permission')
     return render(request, 'coderunner/index.html',
                   {'questions': questions,
+                   'submissions': submissions,
                    'user': user,
                    'app': APP})
+
+
+@user_passes_test(lambda u: u.has_perm(CAN_PUBLISH_QUESTION),
+                  login_url='/home/')
+def publish_question(request):
+    """View to publish a question
+    Before accessing the view do check
+    if the user has minimum score """
+
+    form = PublishQuestionForm(request.POST or None)
+    if form.is_valid():
+        publish = form.save(commit=False)
+
+        # Save the authenticated user
+        # as the author of the question
+        publish.author = request.user
+
+        publish.save()
+        return redirect('/home/')
+    return render(request,
+                  'coderunner/publish_question.html',
+                  {'form': form, 'app': APP})
+
+
+def check_authorization(request, qid_obj):
+        """ Check if the user is
+        authorized to modify the question,
+        by verifying if the requesting user
+        is the author of the question
+
+        :param qid_obj:     Questions object
+        :return True:       If user is authorized
+        :return False:      User is unauthorized
+
+        """
+        print('Checking authorization')
+        if request.user == qid_obj.author:
+            print(f'User: {request.user} is '
+                  f'permited to modify Question: "{qid_obj}"')
+            return True
+        else:
+            print(f'User: {request.user} is not '
+                  f'permited to modify Question: "{qid_obj}"')
+            return False
+
+
+class Modify(UpdateView):
+    """ View to allow the author of
+    the question to modify the question
+    """
+
+    model = Questions
+    template_name = 'coderunner/modify_question.html'
+    form_class = PublishQuestionForm
+    success_url = '/home/'
+
+    def dispatch(self, request, *args, **kwargs):
+        """Override the dispatch method
+        to check if the requesting user
+        is authorized to modify the question
+        """
+
+        qid_obj = get_object_or_404(Questions, pk=kwargs.get('pk', None))
+        if not check_authorization(request, qid_obj):
+            return redirect('/home/')
+        else:
+            return super().dispatch(request, *args, **kwargs)
+
+
+class DeleteQuestion(DeleteView):
+    """Generic class based view to implement
+    delete fucntionalities for the created objects
+    Before rendering the view do check if the user
+    is authorized to delete the object
+    """
+
+    model = Questions
+    success_url = '/home/'
+
+    def dispatch(self, request, *args, **kwargs):
+        qid_obj = get_object_or_404(Questions, pk=kwargs.get('pk', None))
+        if not check_authorization(request, qid_obj):
+            return redirect('/home/')
+        else:
+            return super().dispatch(request, *args, **kwargs)
 
 
 @csrf_exempt
@@ -161,10 +256,10 @@ def validate_program(request):
     snippet = request.POST.get('snippet', '')
 
     # SLOW DOWN THE LINTING PROCESS to save system resources:
-    # If Linting_event_occurance_interval < 2 sec,
+    # If Linting_event_occurance_interval < 1 sec,
     # then don't process the snippet for linting
     # and update "last_event_time"
-    # (Reduced the interval to 2 from 5 for realtime linting)
+    # (Reduced the interval to 1 from 5 for realtime linting)
     if (datetime.timestamp(datetime.now()) -
             request.session['last_event_time']) < 1:
 
@@ -172,26 +267,11 @@ def validate_program(request):
         return JsonResponse(None, safe=False)
 
     # By this time, a temp file
-    # "django_ayush_[random_string].py" for the user
+    # "coderunner_[random_string].py" for the user
     # must have been created while accessing "details/" view
     # use that temp file for code linting.
-    # If temp file not found -> log the exception
-    # and create a temp file
     print(f"\n(VALIDATE_PROGRAM view) SNIPPET:"
           f"\n{snippet}\n-------------------------")
-
-    # try:
-    #     f = open(request.session['file_name'], 'w')
-    #     for t in snippet:
-    #         f.write(t)
-    #     f.flush()
-    # except Exception as e:
-    #     with tempfile.NamedTemporaryFile(prefix='django_ayush_', dir='/tmp',
-    #                                      suffix='.py', delete=False) as temp:
-    #         request.session['file_name'] = temp.name
-    #         for t in snippet:
-    #             temp.write(t.encode('utf-8'))
-    #         temp.flush()
 
     with open(request.session['file_name'], 'w') as fo:
         for ch in snippet:
@@ -271,14 +351,15 @@ def details(request, qid):
     # update this time in linting event handler view
     request.session['last_event_time'] = datetime.timestamp(datetime.now())
 
-    question = get_object_or_404(QuestionAnswer, pk=qid)
+    question = get_object_or_404(Questions, pk=qid)
 
     # Calculate the pass percentage of the question_id
-    if question.times_appeared != 0:
+    if question.times_submitted != 0:
         pass_percent = int((question.times_correct /
-                            question.times_appeared) * 100)
+                            question.times_submitted) * 100)
     else:
         pass_percent = 0
+
     return render(request, 'coderunner/details.html',
                   {'question': question,
                    'pass_percent': pass_percent,
@@ -286,22 +367,147 @@ def details(request, qid):
 
 
 def program(request, qid):
-    print(f"Received POST request {str(request.POST)}")
-    button = request.POST.get('button')
-    print(f"Inside program view and button pressed is: [[{button}]]")
-    PROGRAM_RUN_FLAG = False
+    """
+    View to handle code submit action
+    """
 
-    # If Run button is pressed
-    if button == 'Run':
-        output = run_code(request, qid)
-        print(f"Output: {output}")
-        PROGRAM_RUN_FLAG = True
-        # return HttpResponse(output)
+    # Append testcase status [passed/failed]
+    testcase_status = []
 
-    if PROGRAM_RUN_FLAG:
-        return JsonResponse(output, safe=False)
+    qid_obj = Questions.objects.get(pk=qid)
+    usr_obj = User.objects.get(username=request.user)
+    submit_obj = Submissions(username=usr_obj, question=qid_obj)
+    snippet = request.POST['program']
+
+    # Create a temporary Python file to store submitted program
+    with open(request.session['file_name'], 'w') as fo:
+        for ch in snippet:
+            fo.write(ch)
+
+    # Get the timeout set for the question
+    timeout = qid_obj.timeout
+    if timeout == 0:
+        timeout = None
+
+    testcase = {'input': qid_obj.submit_testcase1_input.split('\n'),
+                'output': qid_obj.submit_testcase1_output
+                }
+
+    data = execute_testcase(request, timeout, testcase)
+    testcase_status.append(data['output'])
+
+    testcase = {'input': qid_obj.submit_testcase2_input.split('\n'),
+                'output': qid_obj.submit_testcase2_output
+                }
+
+    data = execute_testcase(request, timeout, testcase)
+    testcase_status.append(data['output'])
+
+    score = qid_obj.score
+    userprofile_score = usr_obj.userprofile.score
+
+    # Increase the times_submitted counter
+    qid_obj.times_submitted += 1
+
+    if 'failed' in testcase_status:
+        qid_obj.times_wrong += 1
+        data['output'] = 'Testcase: failed, Check your code and try again'
+
+        # Upon incorrect submission reduce the profile score
+        # by half the score set in the question. In case of insufficient
+        # profile score, set profile score to numberic Zero
+        if userprofile_score >= score // 2:
+            userprofile_score -= score // 2
+        else:
+            userprofile_score = 0
+
+        # If user does not satisfy required
+        # critaria remove PUBLISH Question permission
+        if userprofile_score < REQ_SCORE_TO_PUBLISH:
+            usr_obj.user_permissions.remove(CAN_PUBLISH_QUESTION)
+
+        # Update userprofile score in DB
+        usr_obj.userprofile.score = userprofile_score
+
+        # Save all changes to DB
+        qid_obj.save()
+        usr_obj.save()
+        return HttpResponse(f'failed. You lose {score // 2} points')
     else:
-        return HttpResponse('Are you sure? You have not run the code yet.')
+        qid_obj.times_correct += 1
+
+        # Upon successful submission, award the user with
+        # the score mentioned by the author of the question
+        userprofile_score += score
+        if userprofile_score >= REQ_SCORE_TO_PUBLISH and \
+                not usr_obj.has_perm(CAN_PUBLISH_QUESTION):
+            usr_obj.user_permissions.add(CAN_PUBLISH_QUESTION)
+
+        # Update userprofile score in DB
+        usr_obj.userprofile.score += score
+
+        # Upon correct code submission, store the snippet in DB
+        submit_obj.submitted_snippet = snippet
+
+        # Save all changes to DB
+        qid_obj.save()
+        usr_obj.save()
+        submit_obj.save()
+
+        return HttpResponse(f'<p>successfully submitted<br>'
+                            f'You are awared with {score} points</p>')
+
+
+def execute_testcase(request, timeout, testcase):
+    # store the current time stamp, execute the
+    # user code and calculate the execution time
+    # If exec time exceeds fail the solution
+    stime = datetime.timestamp(datetime.now())
+
+    # Initialize a list to contain all the command line argument
+    cmd = ['python', request.session["file_name"]]
+    for arg in testcase['input']:
+        cmd.append(arg)
+
+    print(f"Command going to execute: {cmd}")
+    # Initialize a subprocess to execute user code
+    p = sp.Popen(cmd, shell=False, stdin=sp.PIPE, stdout=sp.PIPE,
+                 stderr=sp.STDOUT, close_fds=True)
+
+    try:
+        (output, error) = p.communicate(timeout=timeout)
+        exec_time = datetime.timestamp(datetime.now()) - stime
+
+        # Strip trailing spaces and new lines
+        output = output.decode('utf-8').strip()
+
+    except sp.TimeoutExpired:
+        # If Timeout expires set exec time to None
+        exec_time = None
+
+        output = "Timeout expired"
+
+    except Exception as e:
+        raise e
+
+    print(f"Expected output: [{testcase['output']}]"
+          f"\tType: {type(testcase['output'])}\n"
+          f"Captured output: [{output}]\tType: {type(output)}")
+
+    if str(output) == str(str(testcase['output']).strip('\n')):
+        output = 'passed'
+        print('Got expected output!!')
+    else:
+        output = 'failed'
+        print('Testcase failed')
+
+    data = {
+        'timeout': timeout,
+        'exec_time': exec_time,
+        'output': output
+    }
+
+    return data
 
 
 @csrf_exempt
@@ -310,11 +516,12 @@ def run_code(request, qid):
     run it and return the output to the user
     """
 
-    qid_obj = QuestionAnswer.objects.get(pk=qid)
-    qid_obj.times_appeared += 1
+    qid_obj = Questions.objects.get(pk=qid)
+    # qid_obj.times_submitted += 1
 
-    # Store the submitted program in session variable
-    # request.session['program'] = request.POST['program']
+    testcase = {'input': qid_obj.run_testcase1_input.split('\n'),
+                'output': qid_obj.run_testcase1_output
+                }
 
     snippet = request.POST['snippet']
 
@@ -323,46 +530,15 @@ def run_code(request, qid):
         for ch in snippet:
             fo.write(ch)
 
-    timeout = None
-    stime = datetime.timestamp(datetime.now())
-    cmd = 'python ' + request.session["file_name"]
-    p = sp.Popen(cmd, shell=True, stdin=sp.PIPE, stdout=sp.PIPE,
-                 stderr=sp.STDOUT, close_fds=True)
-    try:
-        (output, error) = p.communicate(timeout=timeout)
-        exec_time = datetime.timestamp(datetime.now()) - stime
+    # Get the timeout set for the question
+    timeout = qid_obj.timeout
+    if timeout == 0:
+        timeout = None
 
-        # Strip trailing spaces and new lines
-        output = output.decode('utf-8').strip()
-    except sp.TimeoutExpired:
-        output = "Timeout expired"
+    data = execute_testcase(request, timeout, testcase)
 
-        # If Timeout expires set exec time to None
-        exec_time = None
-    except Exception as e:
-        raise e
-
-    print(f"Expected output: {qid_obj.expected_output}"
-          f"\tType: {type(qid_obj.expected_output)}\n"
-          f"Captured output: {output}\tType: {type(output)}")
-    if str(output) == str(qid_obj.expected_output):
-        qid_obj.times_correct += 1
-        print('Got expected output!!')
-    else:
-        qid_obj.times_wrong += 1
-
-    # After completing execution delete the created Python file
-    # if os.path.exists(request.session['file_name']):
-    #     os.remove(request.session['file_name'])
-
-    # Save all database updates
-    qid_obj.save()
-
-    data = {
-        'timeout': timeout,
-        'exec_time': exec_time,
-        'output': output.split('\n')
-    }
+    data['output'] = ['Testcase status: ' + data['output'], ]
+    print(data['output'])
 
     return JsonResponse(data, safe=False)
 

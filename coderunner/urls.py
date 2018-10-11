@@ -46,6 +46,13 @@ urlpatterns = [
 urlpatterns = urlpatterns + [
     path('home/', login_required(views.home), name='home'),
     path('details/<int:qid>/', login_required(views.details), name='details'),
+    path('publish_question/', views.publish_question, name='publish_question'),
+    path('publish_question/modify/<pk>/',
+         views.Modify.as_view(extra_context={'app': APP}),
+         name='modify_question'),
+    path('publish_question/delete/<pk>/',
+         views.DeleteQuestion.as_view(extra_context={'app': APP}),
+         name='delete_question'),
     path('program/<int:qid>/', login_required(views.program), name='program'),
     path('ajax/run_code/<int:qid>/',
          login_required(views.run_code), name='run_code'),

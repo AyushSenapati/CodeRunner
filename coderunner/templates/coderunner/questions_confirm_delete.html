@@ -1,0 +1,28 @@
+{% extends "coderunner/base.html" %}
+
+{% block content %}
+    <div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-2"></div>
+        <div class="col-lg-8" style="padding-top: 35px;">
+            <p class="heading">Confirmation</p>
+            <form action="" method="post">
+                <div class="shadow" style="padding: 35px;">
+                    {% csrf_token %}
+
+                    <p>Are you sure you want to delete "{{object}}" ?</p>
+                </div>
+                <br>
+                <div style="float: right;">
+                    <button class="btn btn-primary">Yes</button>
+                </div>
+            </form>
+            <a href="{% url 'coderunner:home'%}">
+                <button class="btn" style="background: darkred; color: white;">Cancel</button>
+            </a>
+        </div>
+        <div class="col-lg-2"></div>
+    </div>
+</div>
+
+{% endblock content %}

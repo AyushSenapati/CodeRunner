@@ -120,3 +120,7 @@ footer {
     transition-duration: 0.2s;
     transform: scale(1.01);   
 }
+
+.warning {
+    background: orange;
+}

@@ -5,6 +5,8 @@ from django.contrib.auth.forms import (UserCreationForm,
                                        PasswordChangeForm)
 from django.contrib.auth.models import User
 
+from .models import Questions
+
 
 def validate_email_unique(email):
     """Check if provided
@@ -97,3 +99,48 @@ class CustomPasswordChangeForm(PasswordChangeForm):
     class Meta:
         model = User
         fields = ('password', 'password1', 'password2')
+
+
+class PublishQuestionForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['question_text'].widget.attrs.update(
+            {'class': 'form-control', 'placeholder': 'Ask a question'})
+        self.fields['question_desc'].widget.attrs.update(
+            {'class': 'form-control', 'placeholder': 'Describe the question'})
+        self.fields['pre_code_snippet'].widget.attrs.update(
+            {'class': 'form-control',
+             'placeholder': 'Snippet to be available to the user'})
+        self.fields['output_format'].widget.attrs.update(
+            {'class': 'form-control',
+             'placeholder': 'Define output format of the solution'})
+        self.fields['timeout'].widget.attrs.update(
+            {'class': 'form-control',
+             'placeholder': 'Set time limit for code execution'})
+        self.fields['run_testcase1_input'].widget.attrs.update(
+            {'class': 'form-control',
+             'placeholder': 'Testcase-run (input)'})
+        self.fields['run_testcase1_output'].widget.attrs.update(
+            {'class': 'form-control',
+             'placeholder': 'Testcase-run (expected output)'})
+        self.fields['submit_testcase1_input'].widget.attrs.update(
+            {'class': 'form-control',
+             'placeholder': 'Testcase1-submit (input)'})
+        self.fields['submit_testcase1_output'].widget.attrs.update(
+            {'class': 'form-control',
+             'placeholder': 'Testcase1-submit (expected output)'})
+        self.fields['submit_testcase2_input'].widget.attrs.update(
+            {'class': 'form-control',
+             'placeholder': 'Testcase2-submit (input)'})
+        self.fields['submit_testcase2_output'].widget.attrs.update(
+            {'class': 'form-control',
+             'placeholder': 'Testcase2-submit (expected output)'})
+        self.fields['score'].widget.attrs.update(
+            {'class': 'form-control',
+             'placeholder': 'Reward for the question'})
+
+    class Meta:
+        model = Questions
+        exclude = ['author', 'published_on', 'times_submitted',
+                   'times_correct', 'times_wrong']

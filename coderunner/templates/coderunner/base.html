@@ -23,7 +23,7 @@
     {% endblock header %}
 </head>
 
-<body class="theme">
+<body class='theme'>
     {# Holder of Header, content[body] and footer divs #}
     <div id='holder'>
         {# Header #}
@@ -36,6 +36,8 @@
                     .
                     <a href="{% url 'coderunner:home' %}">HOME</a>
                     . 
+                    <a href="{% url 'coderunner:publish_question' %}">Publish</a>
+                    .
                     <a href="{% url 'password_change' %}">Change password</a>
                      /
                     <a href="{% url 'logout' %}">Logout</a>
@@ -49,6 +51,15 @@
 
         {# Body #}
         <div id="content">
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
+                        {{ message }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
             {% block content %}
                 
             {% endblock content %}
