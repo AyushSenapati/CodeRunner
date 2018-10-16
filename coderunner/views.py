@@ -29,7 +29,10 @@ FILE_DIR = "/tmp/coderunner_"
 FILE_EXT = ".py"
 REQ_SCORE_TO_PUBLISH = 20
 
-CAN_PUBLISH_QUESTION = Permission.objects.get(name='Can add Questions')
+CAN_PUBLISH_QUESTION = {
+    'perm_obj': Permission.objects.get(name='Can add Questions'),
+    'string': 'coderunner.add_questions'
+}
 
 
 # Create your views here.
@@ -136,6 +139,10 @@ def account_activation_sent(request):
                   {'app': APP})
 
 
+def index(request):
+    return redirect('/home/')
+
+
 def home(request):
     """Return welcome message with listing
     all available questions to appear
@@ -143,7 +150,10 @@ def home(request):
 
     APP['title'] = 'H O M E'
     user = request.user
-    # user.has_perm()
+    if user.has_perm(CAN_PUBLISH_QUESTION['string']):
+        publish_perm = True
+    else:
+        publish_perm = False
     submissions = Submissions.objects.filter(
         username__username=user)
     questions = Questions.objects.order_by('-id')[:5]
@@ -152,10 +162,11 @@ def home(request):
                   {'questions': questions,
                    'submissions': submissions,
                    'user': user,
+                   'publish_perm': publish_perm,
                    'app': APP})
 
 
-@user_passes_test(lambda u: u.has_perm(CAN_PUBLISH_QUESTION),
+@user_passes_test(lambda u: u.has_perm(CAN_PUBLISH_QUESTION['string']),
                   login_url='/home/')
 def publish_question(request):
     """View to publish a question
@@ -178,28 +189,28 @@ def publish_question(request):
 
 
 def check_authorization(request, qid_obj):
-        """ Check if the user is
-        authorized to modify the question,
-        by verifying if the requesting user
-        is the author of the question
+    """ Check if the user is
+    authorized to modify the question,
+    by verifying if the requesting user
+    is the author of the question
 
-        :param qid_obj:     Questions object
-        :return True:       If user is authorized
-        :return False:      User is unauthorized
+    :param qid_obj:     Questions object
+    :return True:       If user is authorized
+    :return False:      User is unauthorized
 
-        """
-        print('Checking authorization')
-        if request.user == qid_obj.author:
-            print(f'User: {request.user} is '
-                  f'permited to modify Question: "{qid_obj}"')
-            return True
-        else:
-            print(f'User: {request.user} is not '
-                  f'permited to modify Question: "{qid_obj}"')
-            return False
+    """
+    print('Checking authorization')
+    if request.user == qid_obj.author:
+        print(f'User: {request.user} is '
+              f'permited to modify Question: "{qid_obj}"')
+        return True
+    else:
+        print(f'User: {request.user} is not '
+              f'permited to modify Question: "{qid_obj}"')
+        return False
 
 
-class Modify(UpdateView):
+class ModifyQuestion(UpdateView):
     """ View to allow the author of
     the question to modify the question
     """
@@ -376,7 +387,18 @@ def program(request, qid):
 
     qid_obj = Questions.objects.get(pk=qid)
     usr_obj = User.objects.get(username=request.user)
-    submit_obj = Submissions(username=usr_obj, question=qid_obj)
+
+    # If the user has already submitted a solution for
+    # the question get the submit_obj to update the submission
+    # else create a new object to add the submission
+    try:
+        submit_obj = Submissions.objects.get(username=usr_obj,
+                                             question=qid_obj)
+        already_submitted_flag = True
+    except Submissions.DoesNotExist as e:
+        submit_obj = Submissions(username=usr_obj, question=qid_obj)
+        already_submitted_flag = False
+
     snippet = request.POST['program']
 
     # Create a temporary Python file to store submitted program
@@ -410,52 +432,90 @@ def program(request, qid):
     qid_obj.times_submitted += 1
 
     if 'failed' in testcase_status:
+        url = request.path.replace('program', 'details')
+
         qid_obj.times_wrong += 1
         data['output'] = 'Testcase: failed, Check your code and try again'
 
-        # Upon incorrect submission reduce the profile score
-        # by half the score set in the question. In case of insufficient
-        # profile score, set profile score to numberic Zero
-        if userprofile_score >= score // 2:
-            userprofile_score -= score // 2
+        if not already_submitted_flag:
+            # Upon incorrect submission reduce the profile score
+            # by half the score set in the question. In case of insufficient
+            # profile score, set profile score to numberic Zero
+            if userprofile_score >= score // 2:
+                userprofile_score -= score // 2
+            else:
+                userprofile_score = 0
+
+            # Update userprofile score in DB
+            usr_obj.userprofile.score = userprofile_score
+
+            # If user does not satisfy required
+            # critaria remove PUBLISH Question permission
+            if userprofile_score < REQ_SCORE_TO_PUBLISH:
+                usr_obj.user_permissions.remove(
+                    CAN_PUBLISH_QUESTION['perm_obj']
+                )
+
+            msg = "Failed to pass the testcases. " +\
+                f"You have lost { score // 2 } points."
+
         else:
-            userprofile_score = 0
-
-        # If user does not satisfy required
-        # critaria remove PUBLISH Question permission
-        if userprofile_score < REQ_SCORE_TO_PUBLISH:
-            usr_obj.user_permissions.remove(CAN_PUBLISH_QUESTION)
-
-        # Update userprofile score in DB
-        usr_obj.userprofile.score = userprofile_score
+            msg = "Failed to pass the testcases this time. " +\
+                "But you already have submitted correct solution"
 
         # Save all changes to DB
         qid_obj.save()
         usr_obj.save()
-        return HttpResponse(f'failed. You lose {score // 2} points')
+        return render(request,
+                      'CodeRunner/result.html',
+                      {'app': APP,
+                       'testcases': testcase_status,
+                       'msg': msg,
+                       'try_again_url': url})
     else:
         qid_obj.times_correct += 1
 
-        # Upon successful submission, award the user with
-        # the score mentioned by the author of the question
-        userprofile_score += score
-        if userprofile_score >= REQ_SCORE_TO_PUBLISH and \
-                not usr_obj.has_perm(CAN_PUBLISH_QUESTION):
-            usr_obj.user_permissions.add(CAN_PUBLISH_QUESTION)
+        if not already_submitted_flag:
+            # If a user has not already submitted a solution for the
+            # question, award the user with the score mentioned
+            # by the author of the question upon successful submission
+            userprofile_score += score
 
-        # Update userprofile score in DB
-        usr_obj.userprofile.score += score
+            # Update userprofile score in DB
+            usr_obj.userprofile.score = userprofile_score
 
-        # Upon correct code submission, store the snippet in DB
-        submit_obj.submitted_snippet = snippet
+            # Upon correct code submission, store the snippet in DB
+            submit_obj.submitted_snippet = snippet
+
+            msg = "Successfully submitted. " +\
+                f"You are awarded with {score} points"
+
+            # Allow the user to publish a question if
+            # (s)he satisfies required critaria
+            if userprofile_score >= REQ_SCORE_TO_PUBLISH:
+                usr_obj.user_permissions.add(CAN_PUBLISH_QUESTION['perm_obj'])
+                msg = "Successfully submitted. " +\
+                    f"You are awarded with {score} points." +\
+                    "You can now publish a challenge"
+
+        else:
+            # If user has already submitted a correct solution,
+            # only update the code snippet, don't allow the user
+            # to earn points by submitting solutions to the
+            # same questions repeatedly
+            submit_obj.submitted_snippet = snippet
+            msg = "Successfully re-submitted the solution."
 
         # Save all changes to DB
         qid_obj.save()
         usr_obj.save()
         submit_obj.save()
 
-        return HttpResponse(f'<p>successfully submitted<br>'
-                            f'You are awared with {score} points</p>')
+        return render(request,
+                      'CodeRunner/result.html',
+                      {'app': APP,
+                       'testcases': testcase_status,
+                       'msg': msg})
 
 
 def execute_testcase(request, timeout, testcase):
@@ -541,9 +601,3 @@ def run_code(request, qid):
     print(data['output'])
 
     return JsonResponse(data, safe=False)
-
-
-def result(request, qid):
-    """Show results"""
-
-    return render(request, 'coderunner/result.html', {'result': result})

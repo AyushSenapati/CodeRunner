@@ -11,14 +11,6 @@
     <script src="{% static 'coderunner/codemirror/plugins/addon/display/fullScreen.js' %}"></script>
     <script src="{% static 'coderunner/codemirror/plugins/mode/python/python.js' %}"></script>
 
-    <style type="text/css">
-        .CodeMirror {
-            border: 1px solid #eee;
-            min-height: 400px;
-            font-size: 16px;
-        }
-
-    </style>
 {% endblock header %}
 
 
@@ -113,10 +105,12 @@
         lineNumbers: true,
         mode: "python",
         indentUnit: 4,
+        tabSize: 4,
         lineWrapping: true,
         // readOnly: "nocursor",
         theme: "neo",
         extraKeys: {
+            "Tab": "indentAuto",
             "Esc": function(cm) {
             if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
             else cm.setOption("fullScreen", true);

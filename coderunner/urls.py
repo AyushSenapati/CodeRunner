@@ -42,13 +42,17 @@ urlpatterns = [
                                                    'app': APP})),
 ]
 
+urlpatterns = urlpatterns + [
+    path('', views.index, name='index'),
+]
+
 # Enforce Login required on the below URLs
 urlpatterns = urlpatterns + [
     path('home/', login_required(views.home), name='home'),
     path('details/<int:qid>/', login_required(views.details), name='details'),
     path('publish_question/', views.publish_question, name='publish_question'),
     path('publish_question/modify/<pk>/',
-         views.Modify.as_view(extra_context={'app': APP}),
+         views.ModifyQuestion.as_view(extra_context={'app': APP}),
          name='modify_question'),
     path('publish_question/delete/<pk>/',
          views.DeleteQuestion.as_view(extra_context={'app': APP}),
@@ -56,7 +60,6 @@ urlpatterns = urlpatterns + [
     path('program/<int:qid>/', login_required(views.program), name='program'),
     path('ajax/run_code/<int:qid>/',
          login_required(views.run_code), name='run_code'),
-    path('result/<int:qid>', login_required(views.result), name='result'),
     path('ajax/validate_program/',
          login_required(views.validate_program), name='validate_program')
 ]

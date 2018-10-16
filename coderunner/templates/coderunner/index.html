@@ -17,7 +17,7 @@
                             Posted on: {{ question.published_on }}
                             / 
                         {% if question.times_submitted > 0 %}
-                            Submitted by {{ question.times_submitted }} user(s)
+                            Submitted {{ question.times_submitted }} time(s)
                         {% else %}
                             Be the first to submit a solution
                         {% endif %}
@@ -59,7 +59,7 @@
                     </div>
                     {# <br> #}
                     <div>
-                        Submissions:
+                        Problems solved:
                         <div style="position: relative;float: right;">
                             {{ submissions|length }}
                         </div>
@@ -68,6 +68,19 @@
                         Score:
                         <div style="position: relative;float: right;">
                             {{ user.userprofile.score }}
+                        </div>
+                    </div>
+                    <div>
+                        Can I publish:
+                        <div style="position: relative;float: right;">
+                            {% if publish_perm %}
+                                Yes
+                            {% else %}
+                                No
+                                <a href="#" title="After scoring 20 Publish button will appear automatically">
+                                    <i class="fa fa-info-circle"></i>
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

@@ -24,14 +24,14 @@ header {
 
 #content {
     height: 100%;
-    padding-bottom: 230px;  /* Should be equal to height of footer */
+    padding-bottom: 200px;  /* Should be equal to height of footer */
     padding-left: 25px;
     padding-right: 25px;
 }
 
 footer {
     color: gray;
-    height:130px;
+    height:100px;
     width:100%;
     /*background: #E3E5E3;*/
     background: black;
@@ -39,7 +39,7 @@ footer {
     left:0;
     bottom:0;
     text-align: center;
-    font-size: 11px;
+    font-size: 10px;
 }
 
 #user-tools {
@@ -52,7 +52,7 @@ footer {
     font-size: 11px;
     letter-spacing: 1px;
     text-transform: uppercase;
-    padding-right: 50px;
+    padding-right: 35px;
     padding-bottom: 10px;
     font: normal 10px verdana, sans-serif;
 }
@@ -123,4 +123,10 @@ footer {
 
 .warning {
     background: orange;
+}
+
+.CodeMirror {
+    border: 1px solid #eee;
+    min-height: 400px;
+    font-size: 16px;
 }
