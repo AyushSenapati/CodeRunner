@@ -20,7 +20,6 @@ urlpatterns = [
          views.account_activation_sent, name='account_activation_sent'),
     path('activate/<uidb64>/<token>/',
          views.activate, name='activate'),
-    path('accounts/invalid/', views.invalid),
     path('accounts/password_reset/',
          auth_views.PasswordResetView.as_view(extra_context={'app': APP})),
     path('accounts/password_reset/done/',

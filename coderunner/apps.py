@@ -1,4 +1,7 @@
 from django.apps import AppConfig
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class CoderunnerConfig(AppConfig):
@@ -10,3 +13,4 @@ class CoderunnerConfig(AppConfig):
         signals for when the application is ready
         """
         import coderunner.signals  # Register the signal
+        logger.info(f'{self.name} signals has been registered successfully.')

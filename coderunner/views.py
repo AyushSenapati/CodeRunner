@@ -10,7 +10,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.models import User, Permission
 from django.contrib.auth.decorators import user_passes_test
-# from django.contrib import messages
 from django.views.generic.edit import UpdateView, DeleteView
 
 from .models import Questions, Submissions
@@ -21,7 +20,9 @@ import subprocess as sp
 from datetime import datetime
 from pylint import epylint as lint
 
+import logging
 
+logger = logging.getLogger(__name__)
 APP_NAME = "CODERUNNER"
 LOGO = ' '.join(list(APP_NAME))
 APP = {'name': APP_NAME, 'logo': LOGO, 'title': None}
@@ -67,6 +68,8 @@ def signup(request):
                         force_bytes(user.pk)).decode(),
                     'token': account_activation_token.make_token(user)
                 })
+            logger.info('Account activation link '
+                        f'has been sent to {request.user}')
             user.email_user(email_subject, email_message)
             return redirect('/accounts/signup/account_activation_sent')
     else:
@@ -74,14 +77,6 @@ def signup(request):
     return render(request,
                   'registration/signup.html',
                   {'form': form, 'app': APP})
-
-
-def invalid(request):
-    """This view has been created just to test
-    how account activation invalid view is rendered"""
-    reasons = []
-    return render(request, 'registration/account_activation_invalid.html',
-                  {'app': APP, 'reasons': reasons})
 
 
 def activate(request, uidb64, token):
@@ -140,6 +135,7 @@ def account_activation_sent(request):
 
 
 def index(request):
+    logger.debug(f'{request.user} is accessing index page')
     return redirect('/home/')
 
 
@@ -154,10 +150,14 @@ def home(request):
         publish_perm = True
     else:
         publish_perm = False
+
+    # Returns empty QuerySet if username
+    # does not exist or match with any of the submissions
     submissions = Submissions.objects.filter(
         username__username=user)
+
     questions = Questions.objects.order_by('-id')[:5]
-    # messages.warning(request, 'User has no Publish permission')
+
     return render(request, 'coderunner/index.html',
                   {'questions': questions,
                    'submissions': submissions,
@@ -199,14 +199,10 @@ def check_authorization(request, qid_obj):
     :return False:      User is unauthorized
 
     """
-    print('Checking authorization')
+    logger.debug(f'Checking authorization for user {request.user}')
     if request.user == qid_obj.author:
-        print(f'User: {request.user} is '
-              f'permited to modify Question: "{qid_obj}"')
         return True
     else:
-        print(f'User: {request.user} is not '
-              f'permited to modify Question: "{qid_obj}"')
         return False
 
 
@@ -228,8 +224,12 @@ class ModifyQuestion(UpdateView):
 
         qid_obj = get_object_or_404(Questions, pk=kwargs.get('pk', None))
         if not check_authorization(request, qid_obj):
+            logger.debug(f'{request.user} is not '
+                         f'authorized to modify {qid_obj.question_text}')
             return redirect('/home/')
         else:
+            logger.debug(f'{request.user} is authorized '
+                         f'to modify {qid_obj.question_text}')
             return super().dispatch(request, *args, **kwargs)
 
 
@@ -246,8 +246,12 @@ class DeleteQuestion(DeleteView):
     def dispatch(self, request, *args, **kwargs):
         qid_obj = get_object_or_404(Questions, pk=kwargs.get('pk', None))
         if not check_authorization(request, qid_obj):
+            logger.debug(f'{request.user} is not '
+                         f'authorized to delete {qid_obj.question_text}')
             return redirect('/home/')
         else:
+            logger.debug(f'{request.user} is authorized '
+                         f'to delete {qid_obj.question_text}')
             return super().dispatch(request, *args, **kwargs)
 
 
@@ -260,8 +264,7 @@ def validate_program(request):
     # Track the frequency of the event
     # occurance and display it on STDOUT
     request.session['event_count'] += 1
-    print(f"\n(VALIDATE_PROGRAM view) Event occurance: "
-          f"{request.session['event_count']} times")
+    logger.debug(f"Event occurance: {request.session['event_count']} times")
 
     # Get the code snippet from the POST data
     snippet = request.POST.get('snippet', '')
@@ -281,8 +284,6 @@ def validate_program(request):
     # "coderunner_[random_string].py" for the user
     # must have been created while accessing "details/" view
     # use that temp file for code linting.
-    print(f"\n(VALIDATE_PROGRAM view) SNIPPET:"
-          f"\n{snippet}\n-------------------------")
 
     with open(request.session['file_name'], 'w') as fo:
         for ch in snippet:
@@ -310,9 +311,7 @@ def validate_program(request):
         key += 1
         line_num = error.split(':')[1]
         error_message = error.split(':')[2].strip()
-        print(f"Linting Errors: {error_message}")
-        # err_code, err_code_desc, *args = \
-        #     re.findall(r'\((.*?)\)', tmp)[0].split(',')
+        logger.debug(f"Linting Errors: {error_message}")
         data[key] = {'line_num': line_num, 'error_message': error_message}
 
     # If the event occurance interval
@@ -321,13 +320,9 @@ def validate_program(request):
 
     # If <dict type> container has been
     # populated return the dict, else return None
-    print(f"Dict data: {data}")
+    logger.debug(f"Dict data: {data}")
     if data == {}:
         data = None
-
-    # Remove the file after linting is done
-    # if os.path.exists(request.session['file_name']):
-        # os.remove(request.session['file_name'])
 
     return JsonResponse(data, safe=False)
 
@@ -336,10 +331,10 @@ def details(request, qid):
     """Display the question and its description.
     Provide a form with textArea to write program.
     """
-    print("\n(DETAILS view) SESSION DATA:\n-------------------------")
+    logger.debug("\n(DETAILS view) SESSION DATA:\n-------------------------")
     for key, value in request.session.items():
-        print(f"{key} => {value}")
-    print('---------------------------\n')
+        logger.debug(f"{key} => {value}")
+    logger.debug('---------------------------\n')
 
     # Set title of the webpage
     APP['title'] = 'D E T A I L S'
@@ -529,7 +524,7 @@ def execute_testcase(request, timeout, testcase):
     for arg in testcase['input']:
         cmd.append(arg)
 
-    print(f"Command going to execute: {cmd}")
+    logger.debug(f"Command going to execute: {cmd}")
     # Initialize a subprocess to execute user code
     p = sp.Popen(cmd, shell=False, stdin=sp.PIPE, stdout=sp.PIPE,
                  stderr=sp.STDOUT, close_fds=True)
@@ -550,16 +545,14 @@ def execute_testcase(request, timeout, testcase):
     except Exception as e:
         raise e
 
-    print(f"Expected output: [{testcase['output']}]"
-          f"\tType: {type(testcase['output'])}\n"
-          f"Captured output: [{output}]\tType: {type(output)}")
+    logger.debug(f"Expected output: [{testcase['output']}]"
+                 f"\tType: {type(testcase['output'])}\n"
+                 f"Captured output: [{output}]\tType: {type(output)}")
 
     if str(output) == str(str(testcase['output']).strip('\n')):
         output = 'passed'
-        print('Got expected output!!')
     else:
         output = 'failed'
-        print('Testcase failed')
 
     data = {
         'timeout': timeout,
@@ -598,6 +591,5 @@ def run_code(request, qid):
     data = execute_testcase(request, timeout, testcase)
 
     data['output'] = ['Testcase status: ' + data['output'], ]
-    print(data['output'])
 
     return JsonResponse(data, safe=False)

@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
-import getpass
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,7 +20,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '133$#&9zwe&@ch833#7y%mbrmwh1$v$zkj6x^molu61udyjdou'
+SECRET_KEY = os.environ.get('SECRET_KEY',
+                            '133$#&9zwe&@ch833#7y%mbrmwh1$v$zkj6x^molu61udyjdou')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -118,27 +118,91 @@ USE_L10N = True
 USE_TZ = True
 
 
+# Custom settings:
+# ---------------
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
+
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
 
 STATIC_URL = '/static/'
 LOGIN_REDIRECT_URL = '/home'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 CODEMIRROR_PATH = STATIC_URL + 'coderunner/codemirror/'
-# Note sure if this keyword works,
-# have already added a validator inside form
-# ACCOUNT_UNIQUE_EMAIL = True
-
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # For development purposes only.
 # take the password from env variable at production deployment
-EMAIL_HOST_PASSWORD = getpass.getpass('Password for the mail server:', )
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', None)
 if not EMAIL_HOST_PASSWORD:
+    print('Might have forgotten to set env variable for Email host password!')
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
     EMAIL_HOST = 'smtp.gmail.com'
     EMAIL_USE_TLS = True
     EMAIL_PORT = 587
     EMAIL_HOST_USER = 'noreply.coderunner@gmail.com'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'formatters': {
+        'django.server': {
+            '()': 'django.utils.log.ServerFormatter',
+            'format': '[%(server_time)s] %(message)s',
+        },
+        'coderunner': {
+            'format': '[%(asctime)s ] (%(name)s - %(funcName)s - %(levelname)s) %(message)s',
+            'datefmt': '%Y/%m/%d %H:%M:%S',
+        }
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+        },
+        'console_debug_false': {
+            'level': 'WARNING',
+            # 'level': 'INFO',
+            'filters': ['require_debug_false'],
+            'class': 'logging.StreamHandler',
+        },
+        'django.server': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'django.server',
+        },
+        'coderunner_log': {
+            'level': 'DEBUG',
+            'formatter': 'coderunner',
+            'class': 'logging.StreamHandler'
+        }
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'console_debug_false'],
+            'level': 'INFO',
+        },
+        'django.server': {
+            'handlers': ['django.server'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'coderunner': {
+            'handlers': ['coderunner_log'],
+            'level': 'DEBUG',
+            'propagate': True,
+        }
+    }
+}

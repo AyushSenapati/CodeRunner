@@ -27,7 +27,7 @@
     <div id='holder'>
         {# Header #}
         <header>
-            <div style="padding-left: 35px; padding-top: 15px; font-size: 30px">{{app.logo}}</div>
+            <div id="logo">{{app.logo}}</div>
             <div id='user-tools'>
                 {% if user.is_authenticated %}
                     Welcome,
@@ -59,7 +59,7 @@
             {% if messages %}
                 <ul class="messages">
                     {% for message in messages %}
-                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
+                    <li {% if message.tags %} class="{{ message.tags }}"{% endif %}>
                         {{ message }}
                     </li>
                     {% endfor %}
@@ -73,7 +73,7 @@
         {# Footer #}
         <footer>
             <a href="https://www.github.com/AyushSenapati/CodeRunner">
-                <i class="fa fa-github" style="font-size: 25px; padding-top:20px"></i>
+                <i class="fa fa-github" style="font-size: 25px; padding-top:20px;"></i>
             </a>
             <p style="padding-top:5px;">
                 <i class="fa fa-copyright" style="font-size:11px;"></i>
@@ -84,7 +84,6 @@
                 <br>
                 Powered by <strong>Django</strong>
             </p>
-            {# <p>Powered by <strong>Django</strong></p> #}
         </footer>
 
     </div>
