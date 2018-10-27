@@ -30,10 +30,13 @@ FILE_DIR = "/tmp/coderunner_"
 FILE_EXT = ".py"
 REQ_SCORE_TO_PUBLISH = 20
 
-CAN_PUBLISH_QUESTION = {
-    'perm_obj': Permission.objects.get(name='Can add Questions'),
-    'string': 'coderunner.add_questions'
-}
+try:
+    CAN_PUBLISH_QUESTION = {
+        'perm_obj': Permission.objects.get(name='Can add Questions'),
+        'string': 'coderunner.add_questions'
+    }
+except Exception as e:
+    logger.error(e)
 
 
 # Create your views here.
@@ -55,6 +58,9 @@ def signup(request):
             user = form.save(commit=False)
             user.is_active = False
             user.save()
+            if user.is_active:
+                logger.warning(f'{user.username} is set '
+                               'to active before checking activation token')
             current_site = get_current_site(request)
             email_subject = 'Activate your CodeRunner account'
             email_message = render_to_string(
@@ -91,11 +97,13 @@ def activate(request, uidb64, token):
         uid = urlsafe_base64_decode(uidb64.encode())
         user = User.objects.get(pk=uid)
         if user.is_active:
+            logger.warning(f'Account: {user.username} is already active!')
             reasons = ['Account is already active', ]
             return render(request,
                           'registration/account_activation_invalid.html',
                           {'reasons': reasons, 'app': APP})
     except User.DoesNotExist:
+        logger.warning(f'Account: {user.username} has not been created yet!')
         reasons = ['Account not found', ]
         return render(request,
                       'registration/account_activation_invalid.html',
@@ -114,6 +122,8 @@ def activate(request, uidb64, token):
             auth_login(request, user)
             return redirect('/home')
         else:
+            logger.warning('Token tampering '
+                           f'detected for Account: {user.username}')
             reasons = ['Token validation failed', ]
             return render(request,
                           'registration/account_activation_invalid.html',
@@ -462,7 +472,7 @@ def program(request, qid):
         qid_obj.save()
         usr_obj.save()
         return render(request,
-                      'CodeRunner/result.html',
+                      'coderunner/result.html',
                       {'app': APP,
                        'testcases': testcase_status,
                        'msg': msg,
@@ -507,7 +517,7 @@ def program(request, qid):
         submit_obj.save()
 
         return render(request,
-                      'CodeRunner/result.html',
+                      'coderunner/result.html',
                       {'app': APP,
                        'testcases': testcase_status,
                        'msg': msg})

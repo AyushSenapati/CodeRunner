@@ -11,23 +11,29 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+import dj_database_url
+
+from decouple import config
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.environ.setdefault('BASE_DIR', BASE_DIR)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY',
-                            '133$#&9zwe&@ch833#7y%mbrmwh1$v$zkj6x^molu61udyjdou')
+SECRET_KEY = config('SECRET_KEY',
+                    default='133$#&9zwe&@ch833#7y%mbrmwh1$v$zkj6x^molu61udyjdou')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['*']
-
+if DEBUG:
+    from .development import *
+else:
+    from .production import *
 
 # Application definition
 
@@ -45,6 +51,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+
+    # WhiteNoiseMiddleware must be place right after SecurityMiddleware
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -73,7 +82,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'codeTrial.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
@@ -84,6 +92,8 @@ DATABASES = {
     }
 }
 
+db_from_env = dj_database_url.config()
+DATABASES['default'].update(db_from_env)
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
@@ -117,33 +127,17 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 # Custom settings:
 # ---------------
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
-
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
-
 STATIC_URL = '/static/'
+
 LOGIN_REDIRECT_URL = '/home'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 CODEMIRROR_PATH = STATIC_URL + 'coderunner/codemirror/'
-
-# For development purposes only.
-# take the password from env variable at production deployment
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', None)
-if not EMAIL_HOST_PASSWORD:
-    print('Might have forgotten to set env variable for Email host password!')
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-else:
-    EMAIL_HOST = 'smtp.gmail.com'
-    EMAIL_USE_TLS = True
-    EMAIL_PORT = 587
-    EMAIL_HOST_USER = 'noreply.coderunner@gmail.com'
 
 LOGGING = {
     'version': 1,
@@ -159,10 +153,10 @@ LOGGING = {
     'formatters': {
         'django.server': {
             '()': 'django.utils.log.ServerFormatter',
-            'format': '[%(server_time)s] %(message)s',
+            'format': '[%(server_time)s] %(message)s' if DEBUG else '%(message)s',
         },
         'coderunner': {
-            'format': '[%(asctime)s ] (%(name)s - %(funcName)s - %(levelname)s) %(message)s',
+            'format': '[%(asctime)s ] (%(name)s - %(funcName)s - %(levelname)s) %(message)s' if DEBUG else '(%(name)s - %(funcName)s - %(levelname)s) %(message)s',
             'datefmt': '%Y/%m/%d %H:%M:%S',
         }
     },
@@ -184,7 +178,7 @@ LOGGING = {
             'formatter': 'django.server',
         },
         'coderunner_log': {
-            'level': 'DEBUG',
+            'level': config('APP_LOG_LEVEL', default='INFO'),
             'formatter': 'coderunner',
             'class': 'logging.StreamHandler'
         }
